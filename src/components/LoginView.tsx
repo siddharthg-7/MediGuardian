@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile as updateAuthProfile } from "firebase/auth";
 import { auth, db, handleFirestoreError, OperationType } from "../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { AlertCircle, User as UserIcon, Stethoscope, ChevronLeft } from "lucide-react";
+import { AlertCircle, User as UserIcon, Stethoscope, ChevronLeft, HeartPulse, Mail, Lock, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const LoginView = () => {
   const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
-  const [role, setRole] = useState<"patient" | "doctor" | null>(null);
+  const [role, setRole] = useState<"patient" | "doctor">("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -25,15 +25,9 @@ export const LoginView = () => {
 
     try {
       if (mode === "signup") {
-        if (!role) {
-          setError("Please select a role first.");
-          setLoading(false);
-          return;
-        }
         const result = await createUserWithEmailAndPassword(auth, email, password);
         await updateAuthProfile(result.user, { displayName: name });
         
-        // Create user profile in Firestore
         await setDoc(doc(db, "users", result.user.uid), {
           uid: result.user.uid,
           email: result.user.email,
@@ -57,176 +51,188 @@ export const LoginView = () => {
     }
   };
 
-  const renderRoleSelection = () => (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-black text-primary text-center">I am a...</h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <button
-          onClick={() => setRole("patient")}
-          className={`flex flex-col items-center gap-4 rounded-3xl border-2 p-8 transition-all hover:scale-105 ${
-            role === "patient" ? "border-primary bg-primary/5" : "border-outline-variant hover:border-primary/50"
-          }`}
-        >
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-on-primary">
-            <UserIcon className="h-8 w-8" />
-          </div>
-          <span className="text-lg font-bold text-primary">Patient</span>
-        </button>
-        <button
-          onClick={() => setRole("doctor")}
-          className={`flex flex-col items-center gap-4 rounded-3xl border-2 p-8 transition-all hover:scale-105 ${
-            role === "doctor" ? "border-primary bg-primary/5" : "border-outline-variant hover:border-primary/50"
-          }`}
-        >
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary text-on-secondary">
-            <Stethoscope className="h-8 w-8" />
-          </div>
-          <span className="text-lg font-bold text-primary">Doctor</span>
-        </button>
-      </div>
-      {role && (
-        <button
-          onClick={() => {}} // Form is already showing role, but we could trigger step 2 here
-          className="hidden"
-        />
-      )}
-    </div>
-  );
-
   return (
-    <div className="flex min-h-[calc(100vh-64px)] items-center justify-center bg-surface-container-lowest px-4 py-12">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl rounded-[40px] bg-white p-8 md:p-12 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-outline-variant"
-      >
-        <button 
-          onClick={() => navigate("/")}
-          className="mb-8 flex items-center gap-2 text-sm font-bold text-on-surface-variant hover:text-primary transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back to Home
-        </button>
+    <div className="flex min-h-screen overflow-hidden bg-white font-outfit">
+      {/* Left Side: Branding & Image */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-[#1a237e] p-16 flex-col justify-between overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/50 to-transparent z-10" />
+        
+        <div className="relative z-20 flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
+          <div className="bg-white p-2 rounded-xl shadow-lg">
+            <HeartPulse className="h-8 w-8 text-[#1a237e]" />
+          </div>
+          <span className="text-2xl font-black text-white tracking-tight">MediGuardian</span>
+        </div>
 
-        <AnimatePresence mode="wait">
-          {mode === "signup" && !role ? (
-            <motion.div
-              key="role-selection"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
-              {renderRoleSelection()}
-              <div className="mt-8 text-center text-sm text-on-surface-variant">
-                Already have an account?{" "}
-                <button onClick={() => setMode("login")} className="font-bold text-primary hover:underline">
-                  Sign in
-                </button>
+        <div className="relative z-20 max-w-lg">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl font-black text-white leading-tight mb-6"
+          >
+            Precision Care.<br />
+            <span className="text-blue-300">Intelligent Recovery.</span>
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-xl text-blue-100 font-medium leading-relaxed opacity-90"
+          >
+            Bridging the gap between diagnosis and recovery with smart adherence tracking for everyone.
+          </motion.p>
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="relative z-20 mt-12 rounded-[40px] overflow-hidden border-4 border-white/10 shadow-2xl aspect-video"
+        >
+          <img 
+            src="https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=2070&auto=format&fit=crop" 
+            alt="Medical Research"
+            className="h-full w-full object-cover"
+          />
+        </motion.div>
+      </div>
+
+      {/* Right Side: Auth Card */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-surface-container-lowest relative overflow-y-auto">
+        {/* Background Grid Pattern */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#1a237e 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        
+        <div className="w-full max-w-md relative z-10">
+          <div className="bg-white rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-outline-variant overflow-hidden">
+            
+            {/* Tabs */}
+            <div className="flex bg-surface-container-low border-b border-outline-variant">
+              <button 
+                onClick={() => setRole("patient")}
+                className={`flex-1 py-5 text-sm font-black flex items-center justify-center gap-2 transition-all ${
+                  role === "patient" ? "bg-white text-primary border-b-4 border-primary" : "text-on-surface-variant hover:bg-surface-container-high"
+                }`}
+              >
+                <UserIcon className="h-4 w-4" />
+                Patient Login
+              </button>
+              <button 
+                onClick={() => setRole("doctor")}
+                className={`flex-1 py-5 text-sm font-black flex items-center justify-center gap-2 transition-all ${
+                  role === "doctor" ? "bg-white text-secondary border-b-4 border-secondary" : "text-on-surface-variant hover:bg-surface-container-high"
+                }`}
+              >
+                <Stethoscope className="h-4 w-4" />
+                Physician / Govt
+              </button>
+            </div>
+
+            <div className="p-10">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black text-primary mb-2">Welcome Back</h2>
+                <p className="text-on-surface-variant font-medium">Please enter your details to access your dashboard.</p>
               </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="auth-form"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
-              <h2 className="text-3xl font-black text-primary mb-2">
-                {mode === "login" ? "Welcome Back" : mode === "signup" ? "Get Started" : "Reset Password"}
-              </h2>
-              <p className="text-on-surface-variant mb-8 font-medium">
-                {mode === "login" 
-                  ? "Sign in to manage your precision care." 
-                  : mode === "signup" 
-                    ? `Signing up as a ${role}.` 
-                    : "Enter your email to reset your password."}
-              </p>
 
               {error && (
-                <div className="mb-6 flex items-center gap-3 rounded-2xl bg-error-container p-4 text-sm text-on-error-container border border-error/20">
+                <div className="mb-8 flex items-center gap-3 rounded-2xl bg-error-container p-4 text-xs text-on-error-container border border-error/20">
                   <AlertCircle className="h-5 w-5 shrink-0" />
                   <span className="font-bold">{error}</span>
                 </div>
               )}
               {message && (
-                <div className="mb-6 flex items-center gap-3 rounded-2xl bg-primary-container p-4 text-sm text-on-primary-container border border-primary/20">
+                <div className="mb-8 flex items-center gap-3 rounded-2xl bg-primary-container p-4 text-xs text-on-primary-container border border-primary/20">
                   <AlertCircle className="h-5 w-5 shrink-0" />
                   <span className="font-bold">{message}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 {mode === "signup" && (
-                  <div>
-                    <label className="text-xs font-black text-primary uppercase tracking-widest ml-1">Full Name</label>
+                  <div className="relative">
                     <input 
                       type="text" 
                       required 
-                      className="mt-2 w-full rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-4 text-sm outline-none focus:border-primary focus:bg-white transition-all"
-                      placeholder="Dr. John Doe / Patient Jane"
+                      className="w-full rounded-2xl border border-outline-variant bg-surface-container-low px-12 py-4 text-sm outline-none focus:border-primary focus:bg-white transition-all font-medium"
+                      placeholder="Your Full Name"
                       value={name}
                       onChange={e => setName(e.target.value)}
                     />
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-on-surface-variant opacity-50" />
                   </div>
                 )}
                 
-                <div>
-                  <label className="text-xs font-black text-primary uppercase tracking-widest ml-1">Email Address</label>
+                <div className="relative">
                   <input 
                     type="email" 
                     required 
-                    className="mt-2 w-full rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-4 text-sm outline-none focus:border-primary focus:bg-white transition-all"
-                    placeholder="name@example.com"
+                    className="w-full rounded-2xl border border-outline-variant bg-surface-container-low px-12 py-4 text-sm outline-none focus:border-primary focus:bg-white transition-all font-medium"
+                    placeholder="Email Address"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                   />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-on-surface-variant opacity-50" />
                 </div>
 
                 {mode !== "forgot" && (
-                  <div>
-                    <label className="text-xs font-black text-primary uppercase tracking-widest ml-1">Password</label>
-                    <input 
-                      type="password" 
-                      required 
-                      minLength={6}
-                      className="mt-2 w-full rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-4 text-sm outline-none focus:border-primary focus:bg-white transition-all"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                    />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                       <label className="text-xs font-black text-primary uppercase tracking-widest">Password</label>
+                       <button type="button" onClick={() => setMode("forgot")} className="text-xs font-bold text-primary hover:underline">Forgot password?</button>
+                    </div>
+                    <div className="relative">
+                      <input 
+                        type="password" 
+                        required 
+                        minLength={6}
+                        className="w-full rounded-2xl border border-outline-variant bg-surface-container-low px-12 py-4 text-sm outline-none focus:border-primary focus:bg-white transition-all font-medium"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                      />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-on-surface-variant opacity-50" />
+                    </div>
+                  </div>
+                )}
+
+                {mode === "login" && (
+                  <div className="flex items-center gap-2 px-1">
+                    <input type="checkbox" id="remember" className="rounded border-outline-variant text-primary focus:ring-primary" />
+                    <label htmlFor="remember" className="text-sm font-medium text-on-surface-variant">Remember me for 30 days</label>
                   </div>
                 )}
 
                 <button 
                   type="submit" 
                   disabled={loading}
-                  className="w-full rounded-2xl bg-primary py-5 text-sm font-black text-on-primary shadow-xl hover:bg-primary-container active:scale-95 transition-all disabled:opacity-50"
+                  className={`w-full rounded-2xl py-5 text-sm font-black text-white shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${
+                    role === "patient" ? "bg-[#1a237e] hover:bg-[#1a237e]/90" : "bg-secondary hover:bg-secondary/90"
+                  }`}
                 >
-                  {loading ? "Authenticating..." : mode === "login" ? "Sign In" : mode === "signup" ? "Create Account" : "Send Reset Link"}
+                  {loading ? "Authenticating..." : mode === "login" ? "Login to Dashboard" : mode === "signup" ? "Create Account" : "Send Reset Link"}
+                  {!loading && <ArrowRight className="h-4 w-4" />}
                 </button>
               </form>
 
-              <div className="mt-8 flex flex-col items-center gap-3 text-sm text-on-surface-variant font-medium">
-                {mode === "login" ? (
-                  <>
-                    <button onClick={() => setMode("forgot")} className="hover:text-primary transition-colors">Forgot Password?</button>
-                    <p>New to MediGuardian? <button onClick={() => setMode("signup")} className="font-black text-primary hover:underline">Create Account</button></p>
-                  </>
-                ) : mode === "signup" ? (
-                  <>
-                    <button onClick={() => setRole(null)} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
-                      <ChevronLeft className="h-3 w-3" /> Change Role
-                    </button>
-                    <p>Already have an account? <button onClick={() => setMode("login")} className="font-black text-primary hover:underline">Sign in</button></p>
-                  </>
-                ) : (
-                  <button onClick={() => setMode("login")} className="font-black text-primary hover:underline">Back to Sign in</button>
-                )}
+              <div className="mt-10 pt-10 border-t border-outline-variant text-center">
+                <p className="text-sm font-medium text-on-surface-variant">
+                  {mode === "login" ? (
+                    <>Don't have an account? <button onClick={() => setMode("signup")} className="font-black text-[#1a237e] hover:underline">Sign up for free</button></>
+                  ) : (
+                    <>Already have an account? <button onClick={() => setMode("login")} className="font-black text-[#1a237e] hover:underline">Log in</button></>
+                  )}
+                </p>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+            </div>
+          </div>
+
+          {/* Links Footer */}
+          <div className="mt-12 flex items-center justify-center gap-8 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">
+            <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-primary transition-colors">Help Center</a>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
