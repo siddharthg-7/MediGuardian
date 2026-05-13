@@ -774,36 +774,53 @@ const DoctorDashboard = () => {
                   </div>
                 </div>
 
-                <div className="group p-5 rounded-3xl border border-outline-variant bg-surface-container-low/50">
-                  <label className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 block">Schedule Timings</label>
+                <div className="p-6 rounded-[32px] border border-outline-variant bg-surface-container-low/30 space-y-4">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-black text-primary uppercase tracking-widest">Schedule Timings</label>
+                    <span className="text-[10px] font-black text-on-surface-variant opacity-40 uppercase tracking-widest">{selectedTimings.length} Added</span>
+                  </div>
                   
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {selectedTimings.length === 0 && <p className="text-xs text-on-surface-variant italic">No timings added yet.</p>}
-                    {selectedTimings.map(t => (
-                      <span key={t} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-on-primary shadow-lg animate-in zoom-in-95">
-                        {t}
-                        <button onClick={() => removeTiming(t)} className="hover:text-error-container transition-colors">
-                          <XCircle className="h-3.5 w-3.5" />
-                        </button>
-                      </span>
-                    ))}
+                  <div className="min-h-[60px] flex flex-wrap gap-2.5 p-3 rounded-2xl border border-dashed border-outline-variant bg-white/50">
+                    {selectedTimings.length === 0 ? (
+                      <p className="text-xs text-on-surface-variant italic w-full text-center py-2 opacity-60">Add medicine intake times below.</p>
+                    ) : (
+                      selectedTimings.map(t => (
+                        <motion.span 
+                          layout
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          key={t} 
+                          className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-bold text-primary shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-outline-variant transition-all hover:border-primary/50"
+                        >
+                          <Clock className="h-3.5 w-3.5 opacity-40" />
+                          {t}
+                          <button 
+                            onClick={() => removeTiming(t)} 
+                            className="ml-1 p-0.5 rounded-md hover:bg-error/10 hover:text-error transition-all"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        </motion.span>
+                      ))
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex-1">
+                  <div className="flex items-center gap-3 pt-2">
+                    <div className="relative flex-1 group/input">
                       <input 
                         type="time" 
-                        className="w-full rounded-2xl border border-outline-variant bg-white px-5 py-3 text-sm outline-none focus:border-primary transition-all shadow-sm"
+                        className="w-full rounded-2xl border border-outline-variant bg-white px-5 py-4 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all shadow-sm"
                         value={newTiming}
                         onChange={e => setNewTiming(e.target.value)}
                       />
-                      <Clock className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant opacity-50 pointer-events-none" />
+                      <Clock className="absolute right-5 top-1/2 -translate-y-1/2 h-5 w-5 text-on-surface-variant opacity-30 pointer-events-none group-focus-within/input:opacity-100 group-focus-within/input:text-primary transition-all" />
                     </div>
                     <button 
                       onClick={addTiming}
-                      className="h-12 w-12 rounded-2xl bg-secondary text-on-secondary flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all"
+                      className="h-14 w-14 rounded-2xl bg-primary text-on-primary flex items-center justify-center shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                      title="Add Timing"
                     >
-                      <Plus className="h-6 w-6" />
+                      <Plus className="h-8 w-8" />
                     </button>
                   </div>
                 </div>
