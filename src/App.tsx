@@ -70,7 +70,7 @@ interface Prescription {
   medicineName: string;
   dosage: string;
   timings: string[];
-  criticality: "High" | "Medium" | "Low";
+  frequency: string;
   createdAt: any;
   updatedAt: any;
 }
@@ -476,49 +476,55 @@ const PatientDashboard = () => {
               </div>
             )}
 
-            <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-sm">
-              <div className="bg-surface-container-low px-6 py-4 border-b border-outline-variant flex items-center justify-between">
-                <h2 className="font-bold text-primary flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  Medications to Take
+            <div className="rounded-[32px] border border-outline-variant bg-white overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+              <div className="bg-surface-container-low px-8 py-6 border-b border-outline-variant flex items-center justify-between">
+                <h2 className="text-lg font-black text-primary flex items-center gap-3">
+                  <Clock className="h-6 w-6 text-primary" />
+                  Medications Schedule
                 </h2>
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant bg-white px-3 py-1.5 rounded-full border border-outline-variant">Live Tracking</div>
               </div>
               <div className="divide-y divide-outline-variant">
                 {prescriptions.length === 0 ? (
-                  <div className="p-12 text-center text-on-surface-variant italic">
-                    No active prescriptions. Wear your health with pride!
+                  <div className="p-20 text-center text-on-surface-variant italic font-medium">
+                    No active prescriptions found. Your health is currently self-managed.
                   </div>
                 ) : (
                   prescriptions.map((p) => (
-                    <div key={p.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-surface-container-low/50 transition-colors">
-                      <div className="flex items-start gap-4">
-                        <div className={`p-3 rounded-xl ${p.criticality === "High" ? "bg-error-container text-on-error-container" : "bg-primary-container text-on-primary-container"}`}>
-                          <FileText className="h-6 w-6" />
+                    <div key={p.id} className="p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-surface-container-low/30 transition-all duration-300">
+                      <div className="flex items-start gap-6">
+                        <div className="p-4 rounded-[20px] bg-primary-container/40 text-primary shadow-inner">
+                          <FileText className="h-7 w-7" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-primary">{p.medicineName}</h3>
-                          <p className="text-sm text-on-surface-variant">{p.dosage} • {p.timings.join(", ")}</p>
-                          {p.criticality === "High" && (
-                            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-error-container/50 px-2 py-0.5 text-[10px] font-bold text-on-error-container uppercase tracking-wider">
-                              <AlertCircle className="h-3 w-3" /> Critical
-                            </span>
-                          )}
+                          <h3 className="text-xl font-black text-primary mb-1 tracking-tight">{p.medicineName}</h3>
+                          <div className="flex flex-wrap gap-2 items-center text-sm font-medium text-on-surface-variant">
+                            <span className="bg-surface-container-high px-2 py-0.5 rounded-md">{p.dosage}</span>
+                            <span className="opacity-40">•</span>
+                            <span>{p.frequency}</span>
+                            <span className="opacity-40">•</span>
+                            <div className="flex gap-1">
+                              {p.timings.map(t => (
+                                <span key={t} className="bg-primary/5 text-primary px-2 py-0.5 rounded-md font-bold">{t}</span>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <button 
                           onClick={() => logIntake(p, "skipped")}
-                          className="flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors"
-                          title="Skip"
+                          className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:border-surface-container-high transition-all active:scale-90"
+                          title="Skip Dose"
                         >
-                          <XCircle className="h-5 w-5" />
+                          <XCircle className="h-6 w-6" />
                         </button>
                         <button 
                           onClick={() => logIntake(p, "taken")}
-                          className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-on-primary hover:bg-primary-container transition-all active:scale-95 shadow-md"
+                          className="flex h-12 items-center gap-2 rounded-2xl bg-primary px-6 text-sm font-black text-on-primary hover:bg-primary-container hover:shadow-xl transition-all active:scale-95 shadow-lg shadow-primary/20"
                         >
                           <CheckCircle2 className="h-5 w-5" />
-                          Mark Taken
+                          Mark Intake
                         </button>
                       </div>
                     </div>
@@ -587,8 +593,9 @@ const DoctorDashboard = () => {
   // Prescription Form
   const [medName, setMedName] = useState("");
   const [dosage, setDosage] = useState("");
-  const [timings, setTimings] = useState("");
-  const [crit, setCrit] = useState<"High" | "Medium" | "Low">("Medium");
+  const [frequency, setFrequency] = useState("Daily 1 time");
+  const [selectedTimings, setSelectedTimings] = useState<string[]>([]);
+  const [newTiming, setNewTiming] = useState("09:00");
 
   const [allPatients, setAllPatients] = useState<UserProfile[]>([]);
 
@@ -630,32 +637,56 @@ const DoctorDashboard = () => {
   };
 
   const addPrescription = async () => {
-    if (!selectedPatient || !medName || !dosage || !timings) return;
+    if (!selectedPatient || !medName || !dosage || selectedTimings.length === 0) {
+      alert("Please fill all fields and add at least one timing.");
+      return;
+    }
     try {
       await addDoc(collection(db, "prescriptions"), {
         doctorId: user!.uid,
         patientId: selectedPatient.uid,
         medicineName: medName,
         dosage,
-        timings: timings.split(",").map(t => t.trim()),
-        criticality: crit,
+        frequency,
+        timings: selectedTimings,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
       setMedName("");
       setDosage("");
-      setTimings("");
+      setSelectedTimings([]);
       alert("Prescription added successfully!");
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, "prescriptions");
     }
   };
 
+  const addTiming = () => {
+    if (newTiming && !selectedTimings.includes(newTiming)) {
+      setSelectedTimings([...selectedTimings, newTiming].sort());
+    }
+  };
+
+  const removeTiming = (t: string) => {
+    setSelectedTimings(selectedTimings.filter(item => item !== t));
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header>
-        <h1 className="text-2xl font-bold text-primary">Physician Console</h1>
-        <p className="text-on-surface-variant">Manage patient prescriptions and monitor adherence.</p>
+    <div className="max-w-7xl mx-auto px-6 py-10 space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-black text-primary tracking-tight mb-2">Physician Console</h1>
+          <p className="text-lg text-on-surface-variant font-medium">Precision monitoring & prescription management.</p>
+        </div>
+        <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-outline-variant shadow-sm">
+           <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black">
+             {allPatients.length}
+           </div>
+           <div className="pr-4">
+             <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Active Database</p>
+             <p className="text-sm font-bold text-primary">Registered Patients</p>
+           </div>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
@@ -704,80 +735,134 @@ const DoctorDashboard = () => {
                 <button onClick={() => setSelectedPatient(null)} className="text-xs text-on-surface-variant hover:underline">Change</button>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-primary">Medicine Name</label>
-                  <input type="text" className="mt-1 w-full rounded-xl border border-outline-variant bg-white px-4 py-2.5 text-sm outline-none focus:border-primary" placeholder="e.g. Dolo 650" value={medName} onChange={e => setMedName(e.target.value)} />
+              <div className="space-y-5">
+                <div className="group">
+                  <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1 mb-1 block">Medicine Name</label>
+                  <input 
+                    type="text" 
+                    className="w-full rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-4 text-sm outline-none focus:border-primary focus:bg-white transition-all shadow-sm group-hover:shadow-md" 
+                    placeholder="e.g. Dolo 650" 
+                    value={medName} 
+                    onChange={e => setMedName(e.target.value)} 
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-primary">Dosage</label>
-                    <input type="text" className="mt-1 w-full rounded-xl border border-outline-variant bg-white px-4 py-2.5 text-sm outline-none focus:border-primary" placeholder="e.g. 1 Tablet" value={dosage} onChange={e => setDosage(e.target.value)} />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="group">
+                    <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1 mb-1 block">Dosage</label>
+                    <input 
+                      type="text" 
+                      className="w-full rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-4 text-sm outline-none focus:border-primary focus:bg-white transition-all shadow-sm group-hover:shadow-md" 
+                      placeholder="e.g. 1 Tablet" 
+                      value={dosage} 
+                      onChange={e => setDosage(e.target.value)} 
+                    />
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-primary">Frequency (Timings)</label>
-                    <input type="text" className="mt-1 w-full rounded-xl border border-outline-variant bg-white px-4 py-2.5 text-sm outline-none focus:border-primary" placeholder="e.g. 9:00 AM, 9:00 PM" value={timings} onChange={e => setTimings(e.target.value)} />
+                  <div className="group">
+                    <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1 mb-1 block">Frequency</label>
+                    <select 
+                      className="w-full rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-4 text-sm outline-none focus:border-primary focus:bg-white transition-all shadow-sm cursor-pointer"
+                      value={frequency}
+                      onChange={e => setFrequency(e.target.value)}
+                    >
+                      <option>Daily 1 time</option>
+                      <option>Daily 2 times</option>
+                      <option>Daily 3 times</option>
+                      <option>Weekly</option>
+                      <option>Two times a week</option>
+                    </select>
                   </div>
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-primary">Criticality</label>
-                  <select className="mt-1 w-full rounded-xl border border-outline-variant bg-white px-4 py-2.5 text-sm" value={crit} onChange={e => setCrit(e.target.value as any)}>
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
+
+                <div className="group p-5 rounded-3xl border border-outline-variant bg-surface-container-low/50">
+                  <label className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 block">Schedule Timings</label>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {selectedTimings.length === 0 && <p className="text-xs text-on-surface-variant italic">No timings added yet.</p>}
+                    {selectedTimings.map(t => (
+                      <span key={t} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-on-primary shadow-lg animate-in zoom-in-95">
+                        {t}
+                        <button onClick={() => removeTiming(t)} className="hover:text-error-container transition-colors">
+                          <XCircle className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                      <input 
+                        type="time" 
+                        className="w-full rounded-2xl border border-outline-variant bg-white px-5 py-3 text-sm outline-none focus:border-primary transition-all shadow-sm"
+                        value={newTiming}
+                        onChange={e => setNewTiming(e.target.value)}
+                      />
+                      <Clock className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant opacity-50 pointer-events-none" />
+                    </div>
+                    <button 
+                      onClick={addTiming}
+                      className="h-12 w-12 rounded-2xl bg-secondary text-on-secondary flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <Plus className="h-6 w-6" />
+                    </button>
+                  </div>
                 </div>
+
                 <button 
                   onClick={addPrescription}
-                  className="w-full rounded-xl bg-primary py-4 text-sm font-bold text-on-primary hover:bg-primary-container active:scale-95 transition-all shadow-md mt-4"
+                  className="w-full rounded-2xl bg-primary py-5 text-sm font-black text-on-primary shadow-2xl hover:bg-primary-container active:scale-95 transition-all flex items-center justify-center gap-3 mt-4"
                 >
-                  Create Prescription
+                  <Plus className="h-5 w-5" />
+                  Finalize Prescription
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-sm">
-          <div className="bg-surface-container-low px-6 py-4 border-b border-outline-variant flex items-center justify-between">
-            <h2 className="font-bold text-primary flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Patient Health Tracking
+        <div className="rounded-[40px] border border-outline-variant bg-white overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)]">
+          <div className="bg-surface-container-low px-8 py-6 border-b border-outline-variant flex items-center justify-between">
+            <h2 className="text-lg font-black text-primary flex items-center gap-3">
+              <Users className="h-6 w-6" />
+              Patient Adherence Registry
             </h2>
           </div>
           <div className="divide-y divide-outline-variant">
             {patientData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-12 text-center text-on-surface-variant">
-                <HeartPulse className="h-12 w-12 opacity-20 mb-4" />
-                <p className="text-sm">No monitored patients yet.</p>
+              <div className="flex flex-col items-center justify-center p-24 text-center text-on-surface-variant">
+                <HeartPulse className="h-16 w-16 opacity-10 mb-6" />
+                <p className="text-lg font-medium">No patient data available.</p>
+                <p className="text-sm opacity-60">Add a prescription to start tracking.</p>
               </div>
             ) : (
               patientData.map((pd) => {
                 const adherence = pd.logs.length > 0 ? Math.round((pd.logs.filter(l => l.status === "taken").length / pd.logs.length) * 100) : 0;
                 return (
-                  <div key={pd.profile.uid} className="p-6 space-y-4 hover:bg-surface-container-low/50 transition-colors">
+                  <div key={pd.profile.uid} className="p-8 space-y-6 hover:bg-surface-container-low/30 transition-all duration-300">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary text-on-primary font-bold">
+                      <div className="flex items-center gap-5">
+                        <div className="h-14 w-14 flex items-center justify-center rounded-[20px] bg-[#1a237e] text-white font-black text-xl shadow-lg shadow-blue-900/20">
                           {pd.profile.displayName[0]}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-primary">{pd.profile.displayName}</p>
-                          <p className="text-[10px] text-on-surface-variant">{pd.prescriptions.length} Meds Active</p>
+                          <p className="text-xl font-black text-primary tracking-tight">{pd.profile.displayName}</p>
+                          <p className="text-sm font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">{pd.prescriptions.length} Active Prescriptions</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`text-lg font-bold ${adherence < 70 ? "text-error-container bg-on-error-container" : "text-secondary"}`}>
+                        <div className={`text-4xl font-black ${adherence < 70 ? "text-error" : "text-secondary"} tracking-tighter`}>
                           {adherence}%
-                        </p>
-                        <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Adherence</p>
+                        </div>
+                        <div className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.2em] opacity-60">Precision Rate</div>
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       {pd.prescriptions.map(p => (
-                        <span key={p.id} className="inline-flex items-center gap-1 rounded-lg bg-surface-container-high px-2 py-1 text-[10px] font-medium text-primary">
+                        <div key={p.id} className="group relative flex items-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-xs font-black text-primary transition-all hover:bg-primary hover:text-white border border-outline-variant">
                           {p.medicineName}
-                        </span>
+                          <span className="opacity-40 font-medium">|</span>
+                          <span className="opacity-70 font-medium">{p.frequency}</span>
+                        </div>
                       ))}
                     </div>
                   </div>
