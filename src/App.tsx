@@ -100,9 +100,9 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
-  setShowAuth: (open: boolean) => void;
   handleLogout: () => Promise<void>;
   updateRole: (role: UserRole) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -117,7 +117,6 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showAuth, setShowAuth] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -138,7 +137,16 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     return unsubscribe;
   }, []);
 
-  // Login handles by AuthModal
+  const refreshProfile = async () => {
+    if (user) {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        setProfile(userDoc.data() as UserProfile);
+      }
+    }
+  };
+
+  // Login handled by LoginView route
 
 
   const handleLogout = async () => {
@@ -169,9 +177,8 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading: loading || (user !== null && profile === null && !loading), setShowAuth, handleLogout, updateRole }}>
+    <AuthContext.Provider value={{ user, profile, loading: loading || (user !== null && profile === null && !loading), handleLogout, updateRole, refreshProfile }}>
       {children}
-      <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
       {loginError && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-bottom-2">
           <div className="flex items-center gap-3 rounded-2xl bg-error-container px-6 py-4 text-on-error-container shadow-2xl border border-error/20">
@@ -190,7 +197,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 // --- Components ---
 
 const Navbar = () => {
-  const { user, profile, setShowAuth, handleLogout } = useAuth();
+  const { user, profile, handleLogout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -245,7 +252,7 @@ const Navbar = () => {
             </div>
           ) : (
             <button 
-              onClick={() => setShowAuth(true)}
+              onClick={() => navigate('/login')}
               className="hidden rounded-lg px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-surface-container-low md:block"
             >
               Login
@@ -942,8 +949,9 @@ const CaretakerDashboard = () => {
 };
 
 // --- Main App ---
-import { AuthModal } from "./components/AuthModal";
+import { LoginView } from "./components/LoginView";
 import { ProfileView } from "./components/ProfileView";
+import { PhoneNumberPrompt } from "./components/PhoneNumberPrompt";
 
 export default function App() {
   return (
@@ -955,6 +963,7 @@ export default function App() {
             <AnimatePresence mode="wait">
               <Routes>
                 <Route path="/" element={<LandingView />} />
+                <Route path="/login" element={<LoginView />} />
                 <Route path="/dashboard" element={<DashboardView />} />
                 <Route path="/profile" element={<ProfileView />} />
               </Routes>
@@ -968,7 +977,7 @@ export default function App() {
 }
 
 const LandingView = () => {
-  const { user, setShowAuth, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -997,7 +1006,7 @@ const LandingView = () => {
           
           <div className="mt-4 flex flex-col gap-4 sm:flex-row">
             <button 
-              onClick={() => user ? navigate('/dashboard') : setShowAuth(true)}
+              onClick={() => user ? navigate('/dashboard') : navigate('/login')}
               disabled={loading}
               className="flex h-12 items-center justify-center rounded-2xl bg-primary px-8 text-sm font-bold text-on-primary transition-all hover:bg-primary-container active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -1058,7 +1067,7 @@ const LandingView = () => {
 };
 
 const DashboardView = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   
   if (loading) return <div className="flex items-center justify-center h-[60vh]"><HeartPulse className="h-10 w-10 text-primary animate-pulse" /></div>;
@@ -1067,6 +1076,11 @@ const DashboardView = () => {
     return null;
   }
   if (!profile) return <RoleSelection />;
+
+  // Condition: After patient login, take phone number for automation
+  if (profile.role === "patient" && !profile.phoneNumber) {
+    return <PhoneNumberPrompt userId={user.uid} onComplete={refreshProfile} />;
+  }
 
   return (
     <motion.div
