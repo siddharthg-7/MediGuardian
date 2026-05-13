@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isDoctor() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+    }
+
+    function isPatient() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'patient';
+    }
+
+    function isCaretaker() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'caretaker';
+    }
+
+    // --- Validations ---
+    function isValidUser(data, isCreate) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'createdAt']) &&
+             data.keys().size() == 5 &&
+             data.uid == request.auth.uid &&
+             data.email is string &&
+             data.displayName is string &&
+             data.role in ['patient', 'doctor', 'caretaker'] &&
+             (isCreate ? data.createdAt == request.time : true);
+    }
+
+    function isValidPrescription(data, isCreate) {
+      return data.keys().hasAll(['doctorId', 'patientId', 'medicineName', 'dosage', 'timings', 'criticality', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 8 &&
+             data.doctorId == request.auth.uid &&
+             data.patientId is string &&
+             data.medicineName is string && data.medicineName.size() <= 100 &&
+             data.dosage is string && data.dosage.size() <= 100 &&
+             data.timings is list && data.timings.size() <= 10 &&
+             data.criticality in ['High', 'Medium', 'Low'] &&
+             (isCreate ? data.createdAt == request.time : true) &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidMedicineLog(data, isCreate) {
+      return data.keys().hasAll(['userId', 'prescriptionId', 'prescriptionName', 'doctorId', 'status', 'timestamp', 'createdAt']) &&
+             data.keys().size() >= 7 && data.keys().size() <= 8 &&
+             data.userId == request.auth.uid &&
+             data.prescriptionId is string &&
+             data.prescriptionName is string &&
+             data.doctorId is string &&
+             data.status in ['taken', 'skipped', 'pending'] &&
+             data.timestamp is timestamp &&
+             (isCreate ? data.createdAt == request.time : true) &&
+             (data.keys().hasAny(['caretakerId']) ? data.caretakerId is string : true);
+    }
+
+    function isValidCaretakerRelationship(data, isCreate) {
+      return data.keys().hasAll(['caretakerId', 'patientId', 'status', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.caretakerId is string &&
+             data.patientId is string &&
+             data.status in ['active', 'pending'] &&
+             (isCreate ? data.createdAt == request.time : true);
+    }
+
+    // --- Rules ---
+
+    match /users/{userId} {
+      allow get: if (isOwner(userId) || isSignedIn()) && isValidId(userId);
+      allow list: if isSignedIn() && (resource.data.role == 'patient' || resource.data.uid == request.auth.uid);
+      allow create: if isOwner(userId) && isValidUser(incoming(), true) && isValidId(userId);
+      allow update: if isOwner(userId) && 
+                      isValidId(userId) &&
+                      isValidUser(incoming(), false) && 
+                      incoming().uid == existing().uid &&
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'role']);
+    }
+
+    match /prescriptions/{prescriptionId} {
+      allow list: if isSignedIn() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid);
+      allow get: if isSignedIn() && isValidId(prescriptionId) && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid);
+      allow create: if isDoctor() && isValidPrescription(incoming(), true) && isValidId(prescriptionId);
+      allow update: if isDoctor() && 
+                      isValidId(prescriptionId) &&
+                      existing().doctorId == request.auth.uid &&
+                      isValidPrescription(incoming(), false) &&
+                      incoming().doctorId == existing().doctorId &&
+                      incoming().patientId == existing().patientId &&
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['medicineName', 'dosage', 'timings', 'criticality', 'updatedAt']);
+      allow delete: if isDoctor() && isValidId(prescriptionId) && existing().doctorId == request.auth.uid;
+    }
+
+    match /medicine_logs/{logId} {
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.doctorId == request.auth.uid || (resource.data.keys().hasAny(['caretakerId']) && resource.data.caretakerId == request.auth.uid));
+      allow get: if isSignedIn() && isValidId(logId) && (resource.data.userId == request.auth.uid || resource.data.doctorId == request.auth.uid || (resource.data.keys().hasAny(['caretakerId']) && resource.data.caretakerId == request.auth.uid));
+      allow create: if isPatient() && isValidMedicineLog(incoming(), true) && isValidId(logId);
+      allow update: if isPatient() && 
+                      isValidId(logId) &&
+                      isOwner(existing().userId) && 
+                      isValidMedicineLog(incoming(), false) &&
+                      incoming().userId == existing().userId &&
+                      incoming().prescriptionId == existing().prescriptionId &&
+                      incoming().doctorId == existing().doctorId &&
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['status', 'timestamp']);
+    }
+
+    match /caretaker_relationships/{relId} {
+      allow list: if isSignedIn() && (resource.data.caretakerId == request.auth.uid || resource.data.patientId == request.auth.uid);
+      allow get: if isSignedIn() && isValidId(relId) && (resource.data.caretakerId == request.auth.uid || resource.data.patientId == request.auth.uid);
+      allow create: if isCaretaker() && incoming().caretakerId == request.auth.uid && isValidCaretakerRelationship(incoming(), true) && isValidId(relId);
+      allow update: if isValidId(relId) && (
+                      (isPatient() && existing().patientId == request.auth.uid && incoming().status == 'active' && incoming().diff(existing()).affectedKeys().hasOnly(['status'])) ||
+                      (isCaretaker() && existing().caretakerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['status']))
+                    );
+      allow delete: if isSignedIn() && isValidId(relId) && (existing().caretakerId == request.auth.uid || existing().patientId == request.auth.uid);
+    }
+  }
+}

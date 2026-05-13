@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information with role",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["patient", "doctor", "caretaker"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Prescription": {
+      "title": "Prescription",
+      "description": "Doctor's medication prescription",
+      "type": "object",
+      "properties": {
+        "doctorId": { "type": "string" },
+        "patientId": { "type": "string" },
+        "medicineName": { "type": "string" },
+        "dosage": { "type": "string" },
+        "timings": { "type": "array", "items": { "type": "string" } },
+        "criticality": { "type": "string", "enum": ["High", "Medium", "Low"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["doctorId", "patientId", "medicineName", "dosage", "timings", "criticality"]
+    },
+    "MedicineLog": {
+      "title": "MedicineLog",
+      "description": "Adherence log for a medicine dose",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "prescriptionId": { "type": "string" },
+        "prescriptionName": { "type": "string" },
+        "status": { "type": "string", "enum": ["taken", "skipped", "pending"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "prescriptionId", "status", "timestamp"]
+    },
+    "CaretakerRelationship": {
+      "title": "CaretakerRelationship",
+      "description": "Mapping between caretakers and patients",
+      "type": "object",
+      "properties": {
+        "caretakerId": { "type": "string" },
+        "patientId": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "pending"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["caretakerId", "patientId", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/prescriptions/{prescriptionId}": {
+      "schema": "Prescription",
+      "description": "Medication prescriptions"
+    },
+    "/medicine_logs/{logId}": {
+      "schema": "MedicineLog",
+      "description": "Daily medicine intake logs"
+    },
+    "/caretaker_relationships/{relId}": {
+      "schema": "CaretakerRelationship",
+      "description": "Caretaker-Patient links"
+    }
+  }
+}
