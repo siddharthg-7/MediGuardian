@@ -4,24 +4,29 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   
-  --color-primary: #000928;
+  --color-primary: #005394;
   --color-on-primary: #ffffff;
-  --color-primary-container: #0b1f4d;
-  --color-on-primary-container: #7788bc;
+  --color-primary-container: #2b6cb0;
+  --color-on-primary-container: #e1ecff;
   
-  --color-secondary: #2d6950;
-  --color-secondary-container: #afedcd;
-  --color-on-secondary-container: #326d54;
+  --color-secondary: #006d3d;
+  --color-secondary-container: #8af6b0;
+  --color-on-secondary-container: #007240;
   
-  --color-surface: #f7f9fd;
-  --color-surface-container-low: #f2f4f8;
+  --color-tertiary: #475459;
+  --color-tertiary-container: #5f6c72;
+  
+  --color-surface: #f9f9ff;
+  --color-surface-container-low: #f0f3ff;
   --color-surface-container-lowest: #ffffff;
-  --color-on-surface: #191c1f;
-  --color-on-surface-variant: #45464f;
+  --color-surface-container-high: #dee8ff;
+  --color-on-surface: #121c2c;
+  --color-on-surface-variant: #414750;
   
-  --color-outline: #757680;
-  --color-outline-variant: #c5c6d0;
+  --color-outline: #727782;
+  --color-outline-variant: #c1c7d2;
   
+  --color-error: #ba1a1a;
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
 
@@ -30,8 +35,18 @@
   --radius-2xl: 1rem;
 }
 
-@layer base {
-  body {
-    @apply bg-surface text-on-surface font-sans antialiased;
+@layer components {
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+  }
+  .glass-dark {
+    @apply bg-black/10 backdrop-blur-xl border border-white/10;
   }
 }
+
+@layer base {
+  body {
+    @apply bg-surface text-on-surface font-sans antialiased selection:bg-primary/10 selection:text-primary;
+  }
+}
+
