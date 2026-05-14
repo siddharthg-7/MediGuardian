@@ -10,20 +10,41 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getPrescriptionsByPatient, logMedicineIntake, Prescription } from '../services/medicationService';
+import { db } from '../services/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+
 
 const PatientDashboard: React.FC = () => {
   const { user, profile } = useAuth();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [adherence, setAdherence] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      getPrescriptionsByPatient(user.uid).then(data => {
-        setPrescriptions(data);
+      const fetchData = async () => {
+        const meds = await getPrescriptionsByPatient(user.uid);
+        setPrescriptions(meds);
+        
+        // Simple adherence calculation for demo: (Logs / (Prescriptions * Days))
+        // For Phase 1, we'll just mock a logic that counts recent logs
+        const logsRef = collection(db, 'medicine_logs');
+        const q = query(logsRef, where('patientId', '==', user.uid));
+        const logsSnap = await getDocs(q);
+        const totalLogs = logsSnap.size;
+        
+        if (meds.length > 0) {
+          const calculatedAdherence = Math.min(100, Math.round((totalLogs / (meds.length * 3)) * 100)); // Assuming 3 days of tracking
+          setAdherence(calculatedAdherence || 0);
+        }
+        
         setLoading(false);
-      });
+      };
+      
+      fetchData();
     }
   }, [user]);
+
 
   const handleTakeNow = async (prescriptionId: string) => {
     if (user) {
@@ -59,10 +80,11 @@ const PatientDashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {[
-          { label: 'Daily Adherence', value: '85%', color: 'text-primary' },
+          { label: 'Daily Adherence', value: `${adherence}%`, color: 'text-primary' },
           { label: 'Active Prescriptions', value: prescriptions.length.toString(), color: 'text-secondary' },
-          { label: 'Health Streak', value: '12 Days', color: 'text-tertiary' },
+          { label: 'Health Streak', value: adherence > 80 ? '12 Days' : '0 Days', color: 'text-tertiary' },
         ].map((stat, i) => (
+
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}

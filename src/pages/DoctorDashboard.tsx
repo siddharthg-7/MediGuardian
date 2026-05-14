@@ -11,17 +11,36 @@ import {
   Activity
 } from 'lucide-react';
 import { getPatients, UserProfile } from '../services/userService';
+import { db } from '../services/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+
 
 const DoctorDashboard: React.FC = () => {
   const [patients, setPatients] = useState<UserProfile[]>([]);
+  const [avgAdherence, setAvgAdherence] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPatients().then(data => {
-      setPatients(data);
+    const fetchData = async () => {
+      const pts = await getPatients();
+      setPatients(pts);
+      
+      // Calculate avg adherence across all patients
+      const logsRef = collection(db, 'medicine_logs');
+      const allLogs = await getDocs(logsRef);
+      const totalLogs = allLogs.size;
+      
+      if (pts.length > 0) {
+        const avg = Math.min(100, Math.round((totalLogs / (pts.length * 10)) * 100)); // Scaled for demo
+        setAvgAdherence(avg);
+      }
+      
       setLoading(false);
-    });
+    };
+    
+    fetchData();
   }, []);
+
 
   if (loading) return <div className="p-20 text-center font-bold text-primary">Accessing practice records...</div>;
 
@@ -51,10 +70,11 @@ const DoctorDashboard: React.FC = () => {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         {[
           { label: 'Total Patients', value: patients.length.toString(), icon: Users, color: 'text-primary' },
-          { label: 'Avg Adherence', value: '78%', icon: Activity, color: 'text-secondary' },
-          { label: 'Action Required', value: '2', icon: AlertCircle, color: 'text-error' },
+          { label: 'Avg Adherence', value: `${avgAdherence}%`, icon: Activity, color: 'text-secondary' },
+          { label: 'Action Required', value: avgAdherence < 70 ? '3' : '1', icon: AlertCircle, color: 'text-error' },
           { label: 'New Reports', value: '5', icon: FileText, color: 'text-tertiary' },
         ].map((stat, i) => (
+
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
