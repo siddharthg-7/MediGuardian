@@ -9,8 +9,10 @@ import Layout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import MedicationManagement from './pages/MedicationManagement';
 import PatientList from './pages/PatientList';
+import Settings from './pages/Settings';
 
 const App: React.FC = () => {
+
   const { loading } = useAuth();
 
   if (loading) {
@@ -31,8 +33,9 @@ const App: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<div>Settings Page</div>} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
+
       </Route>
 
       {/* Patient & Caretaker Specific Routes */}

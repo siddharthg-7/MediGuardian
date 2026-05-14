@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   Users, 
@@ -9,13 +9,20 @@ import {
   Phone,
   Plus
 } from 'lucide-react';
+import { getPatients, UserProfile } from '../services/userService';
 
 const PatientList: React.FC = () => {
-  const patients = [
-    { id: '1', name: 'David Richards', age: 68, adherence: '85%', condition: 'Diabetes Type 2', contact: '+1 (555) 123-4567' },
-    { id: '2', name: 'Sarah Miller', age: 72, adherence: '42%', condition: 'Hypertension', contact: '+1 (555) 987-6543' },
-    { id: '3', name: 'Michael Chen', age: 65, adherence: '98%', condition: 'Post-Surgery Recovery', contact: '+1 (555) 456-7890' },
-  ];
+  const [patients, setPatients] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getPatients().then(data => {
+      setPatients(data);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <div className="p-20 text-center font-bold text-primary">Loading patient records...</div>;
 
   return (
     <div className="space-y-10">
@@ -38,7 +45,7 @@ const PatientList: React.FC = () => {
           </div>
           <input 
             type="text" 
-            placeholder="Search patients by name, ID, or condition..."
+            placeholder="Search patients..."
             className="w-full bg-white border border-outline-variant rounded-2xl py-4 pl-14 pr-5 outline-none focus:border-primary transition-all text-sm font-bold shadow-sm"
           />
         </div>
@@ -49,9 +56,9 @@ const PatientList: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {patients.map((patient, i) => (
+        {patients.length > 0 ? patients.map((patient, i) => (
           <motion.div
-            key={patient.id}
+            key={patient.uid}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
@@ -59,7 +66,7 @@ const PatientList: React.FC = () => {
           >
             <div className="flex items-start justify-between mb-8">
               <div className="h-16 w-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary font-black text-xl">
-                {patient.name.split(' ').map(n => n[0]).join('')}
+                {patient.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
               </div>
               <button className="p-3 rounded-xl hover:bg-surface-container-low transition-all text-on-surface-variant">
                 <MoreHorizontal className="h-5 w-5" />
@@ -67,27 +74,25 @@ const PatientList: React.FC = () => {
             </div>
 
             <div className="mb-8">
-              <h3 className="text-2xl font-black text-primary mb-1">{patient.name}</h3>
-              <p className="text-sm font-bold text-on-surface-variant italic mb-4">{patient.condition}</p>
+              <h3 className="text-2xl font-black text-primary mb-1">{patient.displayName}</h3>
+              <p className="text-sm font-bold text-on-surface-variant italic mb-4">Patient</p>
               
               <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-on-surface-variant opacity-60">
-                <span>Age: {patient.age}</span>
-                <span>•</span>
-                <span>ID: #PX-{patient.id}00</span>
+                <span>{patient.email}</span>
               </div>
             </div>
 
             <div className="space-y-4 mb-8">
                <div className="flex items-center justify-between">
                  <span className="text-[10px] font-black uppercase tracking-widest text-primary opacity-40">Adherence Score</span>
-                 <span className={`text-sm font-black ${parseInt(patient.adherence) > 70 ? 'text-secondary' : 'text-error'}`}>
-                   {patient.adherence}
+                 <span className="text-sm font-black text-secondary">
+                   -- %
                  </span>
                </div>
                <div className="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
                  <div 
-                   className={`h-full rounded-full transition-all duration-1000 ${parseInt(patient.adherence) > 70 ? 'bg-secondary' : 'bg-error'}`} 
-                   style={{ width: patient.adherence }}
+                   className="h-full rounded-full bg-secondary" 
+                   style={{ width: '0%' }}
                  />
                </div>
             </div>
@@ -103,7 +108,12 @@ const PatientList: React.FC = () => {
               </button>
             </div>
           </motion.div>
-        ))}
+        )) : (
+          <div className="col-span-full p-20 text-center border-2 border-dashed border-outline-variant rounded-[40px]">
+            <Users className="h-12 w-12 text-on-surface-variant opacity-20 mx-auto mb-4" />
+            <p className="text-on-surface-variant font-bold">No real patients found in the database.</p>
+          </div>
+        )}
       </div>
     </div>
   );

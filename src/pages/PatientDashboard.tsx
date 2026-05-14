@@ -160,7 +160,21 @@ const PatientDashboard: React.FC = () => {
             </button>
             <div className="absolute -bottom-10 -right-10 h-32 w-32 bg-white/10 rounded-full blur-3xl"></div>
           </div>
+
+          <div className="rounded-[32px] border-2 border-error/20 bg-error/5 p-8 shadow-sm">
+            <h3 className="text-xl font-black text-error mb-4 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Emergency
+            </h3>
+            <p className="text-xs font-bold text-error/80 leading-relaxed mb-6">
+              In case of a missed dose or medical emergency, your caretaker (John Doe) will be notified automatically.
+            </p>
+            <button className="w-full rounded-xl bg-error px-4 py-4 text-sm font-black text-white shadow-lg shadow-error/20 hover:scale-[1.02] transition-all">
+              Notify Caretaker Now
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   );

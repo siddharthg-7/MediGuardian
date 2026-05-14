@@ -7,7 +7,6 @@ import {
   deleteDoc, 
   doc, 
   updateDoc,
-  orderBy,
   Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -36,21 +35,25 @@ export const addPrescription = async (prescription: Omit<Prescription, 'id' | 'c
 export const getPrescriptionsByPatient = async (patientId: string) => {
   const q = query(
     collection(db, 'prescriptions'), 
-    where('patientId', '==', patientId),
-    orderBy('createdAt', 'desc')
+    where('patientId', '==', patientId)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription));
+  const meds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription));
+  
+  // Sort client-side to avoid Firebase Composite Index requirement
+  return meds.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
 };
 
 export const getPrescriptionsByDoctor = async (doctorId: string) => {
   const q = query(
     collection(db, 'prescriptions'), 
-    where('doctorId', '==', doctorId),
-    orderBy('createdAt', 'desc')
+    where('doctorId', '==', doctorId)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription));
+  const meds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription));
+  
+  // Sort client-side to avoid Firebase Composite Index requirement
+  return meds.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
 };
 
 export const deletePrescription = async (id: string) => {
