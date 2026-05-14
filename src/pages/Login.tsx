@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { 
   HeartPulse, 
@@ -8,226 +8,255 @@ import {
   Lock, 
   Eye, 
   EyeOff, 
-  ArrowRight,
-  User,
+  ChevronRight,
+  ArrowLeft,
+  ShieldCheck,
+  Zap,
+  CheckCircle2,
+  AlertCircle,
+  UserRound,
   Stethoscope,
-  ChevronRight
+  Activity,
 } from 'lucide-react';
 
 const Login: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'patient' | 'provider'>('patient');
+  const [activeTab, setActiveTab] = useState<'patient' | 'doctor'>('patient');
+  const [isForgotMode, setIsForgotMode] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
+
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      if (isForgotMode) {
+        await resetPassword(email);
+        setSuccess('Password reset link sent to your email.');
+        // After a delay, switch back to login
+        setTimeout(() => setIsForgotMode(false), 3000);
+      } else {
+        await login(email, password);
+        navigate('/dashboard');
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to login');
+      setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] overflow-hidden font-sans">
-      {/* Left Panel - Hero Branding */}
-      <div className="hidden lg:flex flex-[1.2] relative bg-[#0a1931] items-center justify-center p-20 overflow-hidden">
-        {/* Background Image / Decoration */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a1931] to-[#16213e] opacity-95"></div>
+    <div className="flex min-h-screen bg-[#F7FAFC] font-sans overflow-hidden">
+      {/* Immersive Left Panel */}
+      <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] relative bg-[#0a1931] items-center justify-center p-12 xl:p-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a1931] via-[#0B5CAB]/30 to-[#16213e] opacity-95"></div>
         <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80')] bg-cover bg-center"></div>
         
-        <div className="relative z-10 w-full max-w-xl">
+        <div className="absolute top-[-5%] left-[-5%] w-[50%] h-[50%] bg-[#4FD1FF]/5 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[50%] h-[50%] bg-[#0A8F5A]/5 rounded-full blur-[120px] animate-pulse delay-1000" />
+        
+        <div className="relative z-10 w-full max-w-lg">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 mb-16"
+            className="flex items-center gap-3 mb-16 cursor-pointer"
+            onClick={() => navigate('/')}
           >
-            <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-xl border border-white/20">
-              <HeartPulse className="h-10 w-10 text-white" />
+            <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20">
+              <HeartPulse className="h-7 w-7 text-white" />
             </div>
-            <span className="text-2xl font-black tracking-tighter uppercase text-white">MediGuardian</span>
+            <span className="text-xl font-black tracking-tighter uppercase text-white">MediGuardian</span>
           </motion.div>
           
-          <div className="space-y-10">
+          <div className="space-y-12">
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <h1 className="text-6xl font-black leading-[1.1] text-white tracking-tighter mb-6">
-                Empowering <br />
-                <span className="text-secondary italic">Better Health.</span>
+              <h1 className="text-4xl xl:text-5xl font-black text-white leading-tight mb-6">
+                Intelligent Care. <br />
+                <span className="text-gradient-green italic">Defined by AI.</span>
               </h1>
-              <h2 className="text-4xl font-black text-[#68d391] opacity-90 mb-8">Transparent Care.</h2>
-              <p className="text-xl font-medium text-white/70 leading-relaxed max-w-lg">
-                Join thousands of users participating in the digital transformation of healthcare. 
-                Manage prescriptions, track vitals, and access AI-powered medical insights instantly.
+              <p className="text-base xl:text-lg font-medium text-white/50 leading-relaxed max-w-sm">
+                Access your personalized medical ecosystem. Secure, real-time health management for the modern era.
               </p>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-[32px] overflow-hidden shadow-2xl border-4 border-white/10"
-            >
-              <img 
-                src="https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&q=80" 
-                alt="City landscape representing connectivity" 
-                className="w-full aspect-video object-cover"
-              />
-            </motion.div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: 'Adherence', value: '95%', icon: Zap, color: 'text-primary' },
+                { label: 'Security', value: 'AES-256', icon: ShieldCheck, color: 'text-secondary' },
+              ].map((card, i) => (
+                <motion.div
+                  key={card.label}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 + (i * 0.1) }}
+                  className="glass-dark p-6 rounded-[24px] border border-white/5"
+                >
+                  <div className={`h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center mb-4 ${card.color}`}>
+                    <card.icon className="h-4 w-4" />
+                  </div>
+                  <div className="text-2xl font-black text-white mb-0.5">{card.value}</div>
+                  <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">{card.label}</div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
-
-        {/* Decorative elements */}
-        <div className="absolute -top-32 -left-32 h-96 w-96 bg-primary/20 rounded-full blur-[120px]"></div>
-        <div className="absolute -bottom-32 -right-32 h-[500px] w-[500px] bg-secondary/10 rounded-full blur-[150px]"></div>
       </div>
 
-      {/* Right Panel - Login Card */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 lg:p-16 relative">
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#0a1931_1px,transparent_1px)] [background-size:20px_20px]"></div>
+      {/* Right Panel */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 xl:p-12 relative bg-white lg:bg-[#F7FAFC]">
+        <div className="absolute inset-0 bg-grid opacity-[0.2] pointer-events-none hidden lg:block"></div>
         
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-[520px] bg-white rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-outline-variant overflow-hidden"
+          className="w-full max-w-[440px] z-10"
         >
-          {/* Tabs */}
-          <div className="flex border-b border-outline-variant">
-            <button 
-              onClick={() => setActiveTab('patient')}
-              className={`flex-1 flex items-center justify-center gap-3 py-6 font-bold text-sm transition-all relative ${
-                activeTab === 'patient' ? 'text-primary' : 'text-on-surface-variant hover:bg-surface-container-low'
-              }`}
-            >
-              <User className="h-4 w-4" />
-              Patient Login
-              {activeTab === 'patient' && (
-                <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-primary" />
-              )}
-            </button>
-            <button 
-              onClick={() => setActiveTab('provider')}
-              className={`flex-1 flex items-center justify-center gap-3 py-6 font-bold text-sm transition-all relative ${
-                activeTab === 'provider' ? 'text-primary' : 'text-on-surface-variant hover:bg-surface-container-low'
-              }`}
-            >
-              <Stethoscope className="h-4 w-4" />
-              Admin / Provider
-              {activeTab === 'provider' && (
-                <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-primary" />
-              )}
-            </button>
-          </div>
-
-          <div className="p-10 lg:p-14">
-            <div className="mb-10">
-              <h3 className="text-3xl font-black text-primary mb-2">Welcome Back</h3>
-              <p className="text-on-surface-variant font-bold">Please enter your details to access your dashboard.</p>
+          <div className="bg-white lg:rounded-[36px] lg:shadow-premium lg:border lg:border-white/50 p-8 xl:p-12 relative">
+            <div className="mb-10 text-center lg:text-left">
+               <h2 className="text-3xl font-black text-[#0a1931] mb-2 tracking-tight">
+                 {isForgotMode ? 'Reset Password' : 'Sign In'}
+               </h2>
+               <p className="text-sm font-medium text-on-surface-variant opacity-60">
+                 {isForgotMode ? 'Enter your email to receive a reset link.' : 'Enter your credentials to access the portal.'}
+               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-on-surface-variant group-focus-within:text-primary transition-colors opacity-40" />
-                  </div>
+            {!isForgotMode && (
+              <div className="flex p-1 bg-surface-container-low rounded-2xl mb-8 border border-outline-variant/20">
+                <button 
+                  onClick={() => setActiveTab('patient')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-[10px] font-black transition-all relative ${
+                    activeTab === 'patient' ? 'text-white' : 'text-on-surface-variant hover:text-primary'
+                  }`}
+                >
+                  {activeTab === 'patient' && (
+                    <motion.div layoutId="tab-active" className="absolute inset-0 bg-primary rounded-[14px] shadow-lg shadow-primary/20" />
+                  )}
+                  <UserRound className="h-3.5 w-3.5 relative z-10" />
+                  <span className="relative z-10 tracking-[0.1em] uppercase">Patient</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('doctor')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-[10px] font-black transition-all relative ${
+                    activeTab === 'doctor' ? 'text-white' : 'text-on-surface-variant hover:text-primary'
+                  }`}
+                >
+                  {activeTab === 'doctor' && (
+                    <motion.div layoutId="tab-active" className="absolute inset-0 bg-[#0a1931] rounded-[14px] shadow-lg shadow-black/20" />
+                  )}
+                  <Stethoscope className="h-3.5 w-3.5 relative z-10" />
+                  <span className="relative z-10 tracking-[0.1em] uppercase">Doctor</span>
+                </button>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-primary/40 uppercase tracking-widest ml-4">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant opacity-30" />
                   <input 
-                    type="email" 
-                    required
-                    className="w-full bg-white border border-outline-variant rounded-2xl py-4 pl-14 pr-5 outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-sm font-bold text-primary"
-                    placeholder="Email Address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="email" required placeholder="name@example.com"
+                    className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-2xl py-4 pl-12 pr-5 outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-sm font-bold text-[#0a1931]"
+                    value={email} onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between px-1 mb-1">
-                  <span className="text-xs font-black uppercase tracking-widest text-primary opacity-40">Password</span>
-                  <button type="button" className="text-xs font-black text-secondary hover:underline">Forgot password?</button>
-                </div>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-on-surface-variant group-focus-within:text-primary transition-colors opacity-40" />
+              {!isForgotMode && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between px-4">
+                    <label className="text-[10px] font-black text-primary/40 uppercase tracking-widest">Password</label>
+                    <button 
+                      type="button" 
+                      onClick={() => setIsForgotMode(true)}
+                      className="text-[10px] font-black text-secondary hover:underline tracking-widest uppercase"
+                    >
+                      Forgot?
+                    </button>
                   </div>
-                  <input 
-                    type={showPassword ? 'text' : 'password'} 
-                    required
-                    className="w-full bg-white border border-outline-variant rounded-2xl py-4 pl-14 pr-14 outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-sm font-bold text-primary"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-5 flex items-center text-on-surface-variant hover:text-primary transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
+                  <div className="relative">
+                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant opacity-30" />
+                    <input 
+                      type={showPassword ? 'text' : 'password'} required placeholder="••••••••"
+                      className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-2xl py-4 pl-12 pr-12 outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-sm font-bold text-[#0a1931]"
+                      value={password} onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button 
+                      type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-5 flex items-center text-on-surface-variant opacity-30 hover:opacity-100 transition-opacity"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3 px-1">
-                <input type="checkbox" id="remember" className="h-5 w-5 rounded-md border-outline-variant text-primary focus:ring-primary" />
-                <label htmlFor="remember" className="text-sm font-bold text-on-surface-variant">Remember me for 30 days</label>
-              </div>
+              )}
 
               {error && (
-                <motion.div 
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="p-4 rounded-xl bg-error-container text-on-error-container text-xs font-bold"
-                >
-                  {error}
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-4 rounded-xl bg-error/5 flex items-start gap-3">
+                  <AlertCircle className="h-4 w-4 text-error shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-bold text-error leading-relaxed">{error}</p>
                 </motion.div>
               )}
 
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full bg-[#0a1931] text-white py-5 rounded-2xl font-black shadow-xl shadow-[#0a1931]/20 hover:shadow-2xl hover:translate-y-[-2px] active:scale-95 transition-all disabled:opacity-50 disabled:translate-y-0 flex items-center justify-center gap-3 group"
-              >
-                {loading ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                ) : (
-                  <>
-                    Login to Dashboard
-                    <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                  </>
+              {success && (
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-4 rounded-xl bg-secondary/5 flex items-start gap-3">
+                  <CheckCircle2 className="h-4 w-4 text-secondary shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-bold text-secondary leading-relaxed">{success}</p>
+                </motion.div>
+              )}
+
+              <div className="flex gap-3">
+                {isForgotMode && (
+                  <button 
+                    type="button" 
+                    onClick={() => setIsForgotMode(false)}
+                    className="flex-1 bg-surface-container-low text-primary py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-surface-container-high transition-all"
+                  >
+                    Back
+                  </button>
                 )}
-              </button>
+                <button 
+                  type="submit" disabled={loading}
+                  className={`flex-[2] py-5 rounded-2xl font-black text-white shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 uppercase tracking-widest text-[11px] ${
+                    activeTab === 'patient' ? 'bg-primary shadow-primary/20' : 'bg-[#0a1931] shadow-black/20'
+                  }`}
+                >
+                  {loading ? <Activity className="h-4 w-4 animate-spin" /> : (
+                    <>
+                      {isForgotMode ? 'Send Reset Link' : 'Sign In to Dashboard'}
+                      <ChevronRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
 
-            <div className="mt-12 text-center">
-              <p className="text-sm font-bold text-on-surface-variant">
-                Don't have an account? {' '}
-                <Link to="/signup" className="text-secondary font-black hover:underline underline-offset-4">Sign up for free</Link>
-              </p>
-            </div>
+            {!isForgotMode && (
+              <div className="mt-10 text-center">
+                <p className="text-xs font-medium text-on-surface-variant opacity-60">
+                  New to MediGuardian? {' '}
+                  <Link to="/signup" className="text-secondary font-black hover:underline underline-offset-4">Create account</Link>
+                </p>
+              </div>
+            )}
           </div>
         </motion.div>
-
-        <div className="mt-12 flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-on-surface-variant opacity-40">
-          <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
-          <a href="#" className="hover:text-primary transition-colors">Help Center</a>
-        </div>
       </div>
     </div>
   );

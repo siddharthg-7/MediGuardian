@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import SeedPage from './pages/SeedPage';
 import LandingPage from './pages/LandingPage';
 import Layout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -28,6 +29,7 @@ const App: React.FC = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/seed" element={<SeedPage />} />
       
       {/* Shared Protected Routes */}
       <Route element={<ProtectedRoute />}>

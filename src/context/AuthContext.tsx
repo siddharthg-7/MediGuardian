@@ -4,7 +4,8 @@ import {
   User,
   signOut,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, db } from '../services/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -15,6 +16,12 @@ interface UserProfile {
   displayName: string;
   role: 'patient' | 'doctor' | 'caretaker';
   createdAt: any;
+  age?: string;
+  gender?: string;
+  phone?: string;
+  emergencyContact?: string;
+  bloodGroup?: string;
+  existingConditions?: string;
 }
 
 interface AuthContextType {
@@ -22,7 +29,8 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
-  signup: (email: string, pass: string, name: string, role: string) => Promise<void>;
+  signup: (email: string, pass: string, name: string, role: string, extraData?: Partial<UserProfile>) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -56,25 +64,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await signInWithEmailAndPassword(auth, email, pass);
   };
 
-  const signup = async (email: string, pass: string, name: string, role: any) => {
+  const signup = async (email: string, pass: string, name: string, role: any, extraData: Partial<UserProfile> = {}) => {
     const { user: newUser } = await createUserWithEmailAndPassword(auth, email, pass);
     const profileData: UserProfile = {
       uid: newUser.uid,
       email,
       displayName: name,
       role,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      ...extraData
     };
     await setDoc(doc(db, 'users', newUser.uid), profileData);
     setProfile(profileData);
   };
 
-  const logoutUser = async () => {
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
+  const logout = async () => {
     await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, signup, logout: logoutUser }}>
+    <AuthContext.Provider value={{ user, profile, loading, login, signup, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );
